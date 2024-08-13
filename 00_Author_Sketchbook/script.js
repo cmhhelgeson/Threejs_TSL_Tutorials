@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { positionGeometry, cameraProjectionMatrix, modelViewMatrix, storage, attribute, float, timerLocal, uniform, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, negate, texture, uv, vec2, positionLocal } from 'three/tsl';
+import { positionGeometry, cameraProjectionMatrix, modelViewProjection, modelScale, positionView, modelViewMatrix, storage, attribute, float, timerLocal, uniform, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, negate, texture, uv, vec2, positionLocal, int } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
@@ -49,30 +49,74 @@ function init() {
 	// Apply a texture map to the material.
  	const material = new THREE.MeshStandardNodeMaterial();
 
-	/*material.positionNode = tslFn(() => {
+	const positionTSL = tslFn(() => {
 
-		// Within a positionNode, acts as the position of the vertex in world space.
-  	const position = positionLocal;
+		// Destructure uniforms
+		const { uCircleRadius, uCircleSpeed, uSeparationStart, uSeparationEnd, uCircleBounce } = effectController;
 
-  	// Oscillate back and forth along the x-axis
-  	const moveX = sin( timerLocal() );
+		// Access the time elapsed since shader creation.
+		const time = timerLocal();
+		const circleSpeed = time.mul( uCircleSpeed );
 
-		// Equivalent of mesh.position.x += Math.sin(time) in plain Javascript
-  	position.x.addAssign( moveX );
+		// Index of a cube within its respective circle.
+		const instanceWithinCircle = instanceIndex.remainder( meshesPerCircle );
 
-		return positionLocal;
+		// Index of the circle that the cube mesh belongs to.
+		const circleIndex = instanceIndex.div( meshesPerCircle ).add( 1 );
 
-	})(); */
+		const newPosition = positionLocal;
 
-	material.vertexNode = tslFn(() => {
+		// Bring instanceWithinCircle of range [0, meshesPerCircle) into range [-1, 1)
+		const range = float( instanceWithinCircle ).sub( meshesPerCircle / 2 ).div( meshesPerCircle / 2 )
+		// Offset mesh x. Add 1 / meshesPerCircle / 2 to account for ending exclusive range. 
+		newPosition.x.addAssign( range.mul( 2 ).add(0.1) );
+		
+		// Offset mesh y by circleIndex
+		newPosition.y.addAssign( int(circleIndex).sub( 2 ) );
 
-		const position = positionLocal;
+		// Circle Index Even = 1, Circle Index Odd = -1.
+		/*const evenOdd = circleIndex.remainder( 2 ).mul( 2 ).oneMinus();
 
-		position.x.addAssign( sin( timerLocal() ) );
 
-		return cameraProjectionMatrix.mul( modelViewMatrix ).mul( position );
 
-	})();
+		// Increase radius when we enter the next circle.
+		const circleRadius = uCircleRadius.mul( circleIndex );
+
+		// Normalize instanceIndex to range [0, 2*PI].
+		const angle = float( instanceWithinCircle ).div( meshesPerCircle ).mul( PI2 ).add( circleSpeed );
+
+		// Rotate even and odd circles in opposite directions.
+		const circleX = sin( angle ).mul( circleRadius ).mul( evenOdd );
+		const circleY = cos( angle ).mul( circleRadius );
+
+		// Scale cubes in later concentric circles to be larger.
+		const scalePosition = positionGeometry.mul( circleIndex );
+
+		// Rotate the individual cubes that form the concentric circles.
+		const rotatePosition = rotate( scalePosition, vec3( time, time, time ) );
+
+		// Control how much the circles bounce vertically.
+		const bounceOffset = cos( time.mul( 10 ) ).mul( uCircleBounce );
+
+		// Bounce odd and even circles in opposite directions.
+		const bounce = circleIndex.remainder( 2 ).equal( 0 ).cond( bounceOffset, negate( bounceOffset ) );
+
+		// Distance between minimumn and maximumn z-distance between circles.
+		const separationDistance = uSeparationEnd.sub( uSeparationStart );
+
+		// Move sin into range of 0 to 1.
+		const sinRange = ( sin( time ).add( 1 ) ).mul( 0.5 );
+
+		// Make circle separation oscillate in a range of separationStart to separationEnd
+		const separation = uSeparationStart.add( sinRange.mul( separationDistance ) );
+
+		const newPosition = rotatePosition.add( vec3( circleX, circleY.add( bounce ), float( circleIndex ).mul( separation ) ) ); */
+		return vec4( newPosition, 1.0 );
+
+	});
+
+	material.positionNode = positionTSL();
+
 	material.colorNode = texture( crateTexture, uv().add( vec2( timerLocal(), negate( timerLocal()) ) ));
 
 	// Define the geometry of our mesh
