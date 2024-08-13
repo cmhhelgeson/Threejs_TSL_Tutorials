@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
 
-
 let camera, scene, renderer;
 let mesh;
 
@@ -13,7 +12,7 @@ function init() {
 	// Create a PerspectiveCamera with an FOV of 70.
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 100 );
 	// Set the camera back so it's position does not intersect with the center of the cube mesh
-	camera.position.z = 2;
+	camera.position.z = 15;
 
 	scene = new THREE.Scene();
 
@@ -64,25 +63,13 @@ function init() {
 		// Index of the circle that the cube mesh belongs to.
 		const circleIndex = instanceIndex.div( meshesPerCircle ).add( 1 );
 
-		const newPosition = positionLocal;
-
-		// Bring instanceWithinCircle of range [0, meshesPerCircle) into range [-1, 1)
-		const range = float( instanceWithinCircle ).sub( meshesPerCircle / 2 ).div( meshesPerCircle / 2 )
-		// Offset mesh x. Add 1 / meshesPerCircle / 2 to account for ending exclusive range. 
-		newPosition.x.addAssign( range.mul( 2 ).add(0.1) );
-		
-		// Offset mesh y by circleIndex
-		newPosition.y.addAssign( int(circleIndex).sub( 2 ) );
-
 		// Circle Index Even = 1, Circle Index Odd = -1.
-		/*const evenOdd = circleIndex.remainder( 2 ).mul( 2 ).oneMinus();
-
-
+		const evenOdd = circleIndex.remainder( 2 ).mul( 2 ).oneMinus();
 
 		// Increase radius when we enter the next circle.
 		const circleRadius = uCircleRadius.mul( circleIndex );
 
-		// Normalize instanceIndex to range [0, 2*PI].
+		// Normalize instanceWithinCircle to range [0, 2*PI].
 		const angle = float( instanceWithinCircle ).div( meshesPerCircle ).mul( PI2 ).add( circleSpeed );
 
 		// Rotate even and odd circles in opposite directions.
@@ -90,7 +77,7 @@ function init() {
 		const circleY = cos( angle ).mul( circleRadius );
 
 		// Scale cubes in later concentric circles to be larger.
-		const scalePosition = positionGeometry.mul( circleIndex );
+		const scalePosition = positionLocal.mul( circleIndex );
 
 		// Rotate the individual cubes that form the concentric circles.
 		const rotatePosition = rotate( scalePosition, vec3( time, time, time ) );
@@ -110,8 +97,9 @@ function init() {
 		// Make circle separation oscillate in a range of separationStart to separationEnd
 		const separation = uSeparationStart.add( sinRange.mul( separationDistance ) );
 
-		const newPosition = rotatePosition.add( vec3( circleX, circleY.add( bounce ), float( circleIndex ).mul( separation ) ) ); */
-		return vec4( newPosition, 1.0 );
+		// Y pos offset by bounce. Z-distance from the origin increases with each circle.
+		const newPosition = rotatePosition.add( vec3( circleX, circleY.add( bounce ), float( circleIndex ).mul( separation ) ) );
+		return newPosition;
 
 	});
 
