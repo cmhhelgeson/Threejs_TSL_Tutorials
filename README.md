@@ -3,6 +3,7 @@ Welcome to the Three.js TSL Tutorials! This series is designed to help you explo
 
 ### Part 1: Fragment/Vertex Shaders
 In this tutorial,  dive into the basics of applying vertex and fragment shaders to node materials using TSL. 
+
 [Tutorial Link](https://medium.com/@christianhelgeson/three-js-webgpurenderer-part-1-fragment-vertex-shaders-1070063447f0)
 
 ### Part 2: Compute Shaders
