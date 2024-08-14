@@ -1,24 +1,18 @@
 import * as THREE from 'three';
-// NOTE: WebGPU Build is forthcoming
-import WebGPURenderer from 'three/examples/jsm/renderers/webgpu/WebGPURenderer.js';
-import StorageBufferAttribute from 'three/examples/jsm/renderers/common/StorageBufferAttribute.js';
-import { MeshBasicNodeMaterial, modelViewProjection, timerLocal, uniform, cameraViewMatrix, temp, MeshStandardNodeMaterial, storage, If, positionGeometry, float, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, uv, positionLocal, negate, abs, LineBasicNodeMaterial } from 'three/examples/jsm/nodes/Nodes.js';
-import {  } from 'three/examples/jsm/nodes/Nodes.js';
-import { LineSegments2, OrbitControls } from 'three/examples/jsm/Addons.js';
+import { modelViewProjection, timerLocal, uniform, cameraViewMatrix, temp, storage, If, positionGeometry, float, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, uv, positionLocal, negate, abs } from 'three/tsl';
+import { LineSegments2 } from 'three/addons/lines/webgpu/LineSegments2.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
-import StorageInstancedBufferAttribute from 'three/examples/jsm/renderers/common/StorageInstancedBufferAttribute.js';
+import GUI from 'three/addons/libs/lil-gui.module.min.js';
 
 let camera, scene, renderer;
 let computeParticle;
 let params;
 
-init();
-
 function init() {
 
 	// Since we need the WebGPURenderer to perform some calculations, we go against convention by initializing the renderer first.
-	renderer = new WebGPURenderer({ antialias: false })
+	renderer = new THREE.WebGPURenderer({ antialias: false })
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.setAnimationLoop( animate );
@@ -30,7 +24,7 @@ function init() {
 	camera.position.z = 15;
 
 	const geometry = new THREE.SphereGeometry(0.1, 10, 10);
-	const material = new MeshStandardNodeMaterial( { color: "red" });
+	const material = new THREE.MeshStandardNodeMaterial( { color: "red" });
 
 	// Define necessary values for compute calculation
 	const numParticles = 200;
@@ -41,11 +35,11 @@ function init() {
 	const uBoundsZ = uniform( maxBoundSize );
 
 	// Position of each particle
-	const positionBufferAttribute = new StorageInstancedBufferAttribute( numParticles, 3 );
+	const positionBufferAttribute = new THREE.StorageInstancedBufferAttribute( numParticles, 3 );
 	// Velocity of each particle
-	const velocityBufferAttribute = new StorageInstancedBufferAttribute( numParticles, 3 );
+	const velocityBufferAttribute = new THREE.StorageInstancedBufferAttribute( numParticles, 3 );
 	// Scale of each particle
-	const scaleBufferAttribute = new StorageInstancedBufferAttribute( numParticles, 1 );
+	const scaleBufferAttribute = new THREE.StorageInstancedBufferAttribute( numParticles, 1 );
 
 	// Pass buffer attributes as arguments to a new StorageBufferNode.
 	// Storage buffer nodes allow us to access buffer attribute data within our compute shader.
@@ -155,7 +149,7 @@ function init() {
 	// Add bounds helper
 	const boxGeometry = new THREE.BoxGeometry(20, 20, 20);
 	const wireframe = new THREE.WireframeGeometry( boxGeometry );
-	const wireframeMaterial = new MeshBasicNodeMaterial({color: 0xffffff});
+	const wireframeMaterial = new THREE.MeshBasicNodeMaterial({color: 0xffffff});
 	const line = new LineSegments2( wireframe );
 	line.material.depthTest = false;
 	line.material.opacity = 0.25;
@@ -168,7 +162,7 @@ function init() {
 	// Needs to be modified
 	const positionBaseAttribute = boundsHelper.geometry.attributes.position;
 
-	const positionStorageBufferAttribute = new StorageBufferAttribute( 
+	const positionStorageBufferAttribute = new THREE.StorageBufferAttribute( 
 		positionBaseAttribute.array, 
 		positionBaseAttribute.itemSize 
 	);
@@ -177,7 +171,7 @@ function init() {
 
 	boundsHelper.geometry.setAttribute( 'position', positionStorageBufferAttribute );
 
-	boundsHelper.material = new LineBasicNodeMaterial({
+	boundsHelper.material = new THREE.LineBasicNodeMaterial({
 		positionNode: tslFn(() => {
 			const size = float(maxBoundSize);
 			const ratio = vec3( size.div(uBoundsX), size.div(uBoundsY), size.div(uBoundsZ));
@@ -197,10 +191,6 @@ function init() {
 	controls.minDistance = 1;
 	controls.maxDistance = 40;
 
-	params = {
-		pauseSim: false,
-	}
-
 	const updateBoxHelper = () => {
 
 		boundsHelper.scale.set(5, uBoundsY.value, uBoundsZ.value);
@@ -211,7 +201,6 @@ function init() {
 	gui.add( uBoundsX, 'value', 5, 10, 0.1 ).name( 'Bounds X' ).onChange( updateBoxHelper );
 	gui.add( uBoundsY, 'value', 5, 10, 0.1 ).name( 'Bounds Y' );
 	gui.add( uBoundsZ, 'value', 5, 10, 0.1 ).name( 'Bounds Z' );
-	gui.add( params, 'pauseSim' );
 
 	window.addEventListener( 'resize', onWindowResize );
 
@@ -228,12 +217,10 @@ function onWindowResize() {
 
 function animate() {
 	
-	if ( !params.pauseSim ) {
-
-		renderer.compute( computeParticle );
-
-	}
+	renderer.compute( computeParticle );
 
 	renderer.render( scene, camera );
 
 }
+
+init();
