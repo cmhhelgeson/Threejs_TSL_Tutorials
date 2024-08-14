@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { positionGeometry, storage, attribute, float, timerLocal, uniform, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, negate } from 'three/tsl';
+import { positionGeometry, cameraProjectionMatrix, modelViewProjection, modelScale, positionView, modelViewMatrix, storage, attribute, float, timerLocal, uniform, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, negate, texture, uv, vec2, positionLocal, int } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
 
-let camera, scene, renderer, computeColor;
+let camera, scene, renderer;
 let mesh;
 
 init();
@@ -15,6 +15,10 @@ function init() {
 	camera.position.z = 15;
 
 	scene = new THREE.Scene();
+
+	const instanceCount = 80;
+	const numCircles = 4;
+	const meshesPerCircle = instanceCount / numCircles;
 
 	const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
 
@@ -34,25 +38,7 @@ function init() {
 		uCircleBounce: uniform( 0.02 ),
 	};
 
-	const instanceCount = 80;
-	const numCircles = 4;
-	const meshesPerCircle = instanceCount / numCircles;
-
-	const instanceColorArray = new Float32Array( instanceCount * 4 );
-	for ( let i = 0; i < instanceColorArray.length; i ++ ) {
-
-		instanceColorArray[ i * 4 + 0 ] = Math.random();
-		instanceColorArray[ i * 4 + 1 ] = Math.random();
-		instanceColorArray[ i * 4 + 2 ] = Math.random();
-		instanceColorArray[ i * 4 + 3 ] = Math.random();
-
-	}
-
-	const instanceColorAttribute = new THREE.StorageInstancedBufferAttribute( instanceColorArray, 4 );
-
-	geometry.setAttribute( 'instanceColor', instanceColorAttribute );
-
-	material.positionNode = tslFn( () => {
+	const positionTSL = tslFn( () => {
 
 		// Destructure uniforms
 		const { uCircleRadius, uCircleSpeed, uSeparationStart, uSeparationEnd, uCircleBounce } = effectController;
@@ -73,7 +59,7 @@ function init() {
 		// Increase radius when we enter the next circle.
 		const circleRadius = uCircleRadius.mul( circleIndex );
 
-		// Normalize instanceIndex to range [0, 2*PI].
+		// Normalize instanceWithinCircle to range [0, 2*PI].
 		const angle = float( instanceWithinCircle ).div( meshesPerCircle ).mul( PI2 ).add( circleSpeed );
 
 		// Rotate even and odd circles in opposite directions.
@@ -81,7 +67,7 @@ function init() {
 		const circleY = cos( angle ).mul( circleRadius );
 
 		// Scale cubes in later concentric circles to be larger.
-		const scalePosition = positionGeometry.mul( circleIndex );
+		const scalePosition = positionLocal.mul( circleIndex );
 
 		// Rotate the individual cubes that form the concentric circles.
 		const rotatePosition = rotate( scalePosition, vec3( time, time, time ) );
@@ -101,25 +87,18 @@ function init() {
 		// Make circle separation oscillate in a range of separationStart to separationEnd
 		const separation = uSeparationStart.add( sinRange.mul( separationDistance ) );
 
+		// Y pos offset by bounce. Z-distance from the origin increases with each circle.
 		const newPosition = rotatePosition.add( vec3( circleX, circleY.add( bounce ), float( circleIndex ).mul( separation ) ) );
-		return vec4( newPosition, 1.0 );
+		return newPosition;
 
-	} )();
+	} );
 
-	material.fragmentNode = attribute( 'instanceColor' );
-
-
-	computeColor = tslFn( () => {
-
-		const instanceColor = storage( instanceColorAttribute, 'vec4', instanceCount );
-
-		const r = sin( timerLocal().add( instanceIndex ) );
-		const g = cos( timerLocal().add( instanceIndex ) );
-		const b = sin( timerLocal() );
-
-		instanceColor.element( instanceIndex ).assign( vec4( r, g, b, 1.0 ) );
-
-	} )().compute( instanceCount );
+	material.positionNode = positionTSL();
+	//material.colorNode = texture( crateTexture, uv().add( vec2( timerLocal(), negate( timerLocal()) ) ));
+	const r = sin( timerLocal().add( instanceIndex ) );
+	const g = cos( timerLocal().add( instanceIndex ) );
+	const b = sin( timerLocal() );
+	material.fragmentNode = vec4( r, g, b, 1.0 );
 
 
 	mesh = new THREE.InstancedMesh( geometry, material, instanceCount );
@@ -161,6 +140,5 @@ function onWindowResize() {
 function animate() {
 
 	renderer.render( scene, camera );
-	renderer.compute( computeColor );
 
 }
