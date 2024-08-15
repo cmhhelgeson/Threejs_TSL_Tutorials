@@ -6,6 +6,8 @@ In this tutorial,  dive into the basics of applying vertex and fragment shaders 
 
 [Tutorial Link](https://medium.com/@christianhelgeson/three-js-webgpurenderer-part-1-fragment-vertex-shaders-1070063447f0)
 
+![Footlight Cuberade 2](https://github.com/user-attachments/assets/19ae66b9-cc45-463d-863c-61dd7e791326)
+
 ### Part 2: Compute Shaders
 *Coming soon!*
 
