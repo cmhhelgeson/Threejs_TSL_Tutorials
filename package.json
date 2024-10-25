@@ -1,0 +1,17 @@
+{
+  "name": "tsl_basics",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "eslint": "^9.13.0",
+    "vite-plugin-top-level-await": "^1.4.4"
+  },
+  "dependencies": {
+    "three": "^0.169.0",
+    "vite": "^5.4.10"
+  }
+}

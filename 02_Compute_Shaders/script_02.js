@@ -27,25 +27,46 @@ function init() {
 	const material = new THREE.MeshStandardNodeMaterial( { color: "red" });
 
 	// Define necessary values for compute calculation
-	const numParticles = 200;
+	const numParticles = 10000;
 	// Bounds are from [ -10, 10 ] in all directions
 	const maxBoundSize = 10;
 	const uBoundsX = uniform( maxBoundSize );
 	const uBoundsY = uniform( maxBoundSize );
 	const uBoundsZ = uniform( maxBoundSize );
 
+	const positionArray = new Float32Array( numParticles * 3 );
+	const velocityArray = new Float32Array( numParticles * 3);
+
+
+	// Two ways to initialize the values of a storage buffer
+	// 1. Directly access the array ( good for populating buffers with randomized data, as seen below )
+	for ( let i = 0; i < numParticles * 3; i += 3 ) {
+
+		// Assign each component of velocity within range of [ -3, 3 ]
+		const x = Math.random() * 2 - 1;
+		const y = Math.random() * 2 - 1;
+		const z = Math.random() * 2 - 1;
+
+		positionArray[ i ] = 0;
+		positionArray[ i + 1] = 0;
+		positionArray[ i + 2] = 0;
+
+		velocityArray[ i ] = x;
+		velocityArray[ i + 1 ] = y;
+		velocityArray[ i + 2 ] = z;
+
+	}
+
 	// Position of each particle
-	const positionBufferAttribute = new THREE.StorageInstancedBufferAttribute( numParticles, 3 );
+	const positionBufferAttribute = new THREE.StorageInstancedBufferAttribute( positionArray, 3 );
 	// Velocity of each particle
-	const velocityBufferAttribute = new THREE.StorageInstancedBufferAttribute( numParticles, 3 );
-	// Scale of each particle
-	const scaleBufferAttribute = new THREE.StorageInstancedBufferAttribute( numParticles, 1 );
+	const velocityBufferAttribute = new THREE.StorageInstancedBufferAttribute( velocityArray, 3 );
+
 
 	// Pass buffer attributes as arguments to a new StorageBufferNode.
 	// Storage buffer nodes allow us to access buffer attribute data within our compute shader.
-	const positionStorage = storage( positionBufferAttribute, 'vec3', numParticles );
-	const velocityStorage = storage( velocityBufferAttribute , 'vec3', numParticles );
-	const scaleStorage = storage( scaleBufferAttribute, 'float', numParticles );
+	const positionStorage = storage( positionBufferAttribute, 'vec3', positionBufferAttribute.count );
+	const velocityStorage = storage( velocityBufferAttribute , 'vec3', velocityBufferAttribute.count );
 
 	const positionInitFn = tslFn(() => {
 		
@@ -55,28 +76,8 @@ function init() {
 	})
 
 	const positionInit = positionInitFn().compute( numParticles );
-	renderer.compute(positionInit);
+	renderer.compute( positionInit );
 
-	console.log(positionBufferAttribute)
-
-	// Two ways to initialize the values of a storage buffer
-	// 1. Directly access the array ( good for populating buffers with randomized data, as seen below )
-	for ( let i = 0; i < velocityBufferAttribute.array.length; i += 3 ) {
-
-		// Assign each component of velocity within range of [ -3, 3 ]
-		const x = Math.random() * .5 - .25;
-		const y = Math.random() * .5 - .25;
-		const z = Math.random() * .5 - .25;
-
-		const s = Math.random() * 5;
-
-		velocityBufferAttribute.array[ i ] = x;
-		velocityBufferAttribute.array[ i + 1 ] = y;
-		velocityBufferAttribute.array[ i + 2 ] = z;
-
-		scaleBufferAttribute.array[ i / 3 ] = s;
-
-	}
 	// 2. Run an initial compute pass over each value of the array
 
 	const getSign = ( valueNode ) => {
@@ -123,16 +124,8 @@ function init() {
 
 	});
 
-	computeParticle = computeParticleFn().compute(numParticles);
+	computeParticle = computeParticleFn().compute( numParticles );
 
-	/* material.positionNode = tslFn(() => {
-		
-		const readScale = scaleStorage.toReadOnly();
-		const readPos = positionStorage.toReadOnly();
-
-		return positionLocal.mul( readScale ).add( readPos );
-	//}) */
-	
 	material.positionNode = positionLocal.add(positionStorage.toAttribute());
 	material.colorNode = tslFn(() => {
 
