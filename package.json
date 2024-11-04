@@ -7,7 +7,13 @@
     "build": "vite build"
   },
   "devDependencies": {
+    "@types/three": "^0.169.0",
     "eslint": "^9.13.0",
+    "eslint-config-mdcs": "^5.0.0",
+    "eslint-plugin-compat": "^6.0.1",
+    "eslint-plugin-html": "^8.1.2",
+    "eslint-plugin-import": "^2.31.0",
+    "typescript": "^5.6.3",
     "vite-plugin-top-level-await": "^1.4.4"
   },
   "dependencies": {

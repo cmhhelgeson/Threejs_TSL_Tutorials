@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { modelViewProjection, timerLocal, uniform, cameraViewMatrix, temp, storage, If, positionGeometry, float, tslFn, vec3, vec4, rotate, PI2, sin, cos, instanceIndex, uv, positionLocal, negate, abs } from 'three/tsl';
+import { uniform, temp, storage, If, float, Fn, vec3, instanceIndex, positionLocal, negate, abs } from 'three/tsl';
 import { LineSegments2 } from 'three/addons/lines/webgpu/LineSegments2.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -7,7 +7,6 @@ import GUI from 'three/addons/libs/lil-gui.module.min.js';
 
 let camera, scene, renderer;
 let computeParticle;
-let params;
 
 function init() {
 
@@ -33,6 +32,7 @@ function init() {
 	const uBoundsX = uniform( maxBoundSize );
 	const uBoundsY = uniform( maxBoundSize );
 	const uBoundsZ = uniform( maxBoundSize );
+	const VEC3_SIZE = 3;
 
 	const positionArray = new Float32Array( numParticles * 3 );
 	const velocityArray = new Float32Array( numParticles * 3);
@@ -68,7 +68,7 @@ function init() {
 	const positionStorage = storage( positionBufferAttribute, 'vec3', positionBufferAttribute.count );
 	const velocityStorage = storage( velocityBufferAttribute , 'vec3', velocityBufferAttribute.count );
 
-	const positionInitFn = tslFn(() => {
+	const positionInitFn = Fn(() => {
 		
 		// Initialize all particles at position ( 0, 0, 0 )
 		positionStorage.element( instanceIndex ).assign( vec3( 0, 0, 0 ) );
@@ -86,7 +86,7 @@ function init() {
 
 	}
 
-	const computeParticleFn = tslFn(() => {
+	const computeParticleFn = Fn(() => {
 		const vel = velocityStorage.element( instanceIndex );
 		const pos = positionStorage.element( instanceIndex );
 		const newPosX = temp( pos.x.add( vel.x ), 'newPosX' );
@@ -127,7 +127,7 @@ function init() {
 	computeParticle = computeParticleFn().compute( numParticles );
 
 	material.positionNode = positionLocal.add(positionStorage.toAttribute());
-	material.colorNode = tslFn(() => {
+	material.colorNode = Fn(() => {
 
 		const velocity = velocityStorage.element(instanceIndex)
 
@@ -165,7 +165,7 @@ function init() {
 	boundsHelper.geometry.setAttribute( 'position', positionStorageBufferAttribute );
 
 	boundsHelper.material = new THREE.LineBasicNodeMaterial({
-		positionNode: tslFn(() => {
+		positionNode: Fn(() => {
 			const size = float(maxBoundSize);
 			const ratio = vec3( size.div(uBoundsX), size.div(uBoundsY), size.div(uBoundsZ));
 			return positionLocal.div(ratio);
